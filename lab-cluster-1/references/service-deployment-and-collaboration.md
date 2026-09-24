@@ -2,25 +2,25 @@
 
 ## 服务部署模式
 
-host-network 服务访问模式：job 内启动 HTTP 服务，开发机访问日志中的内网 IP 和端口。2026-08-11 当前默认使用 llmagent CPU rjob；旧 ai4sdata/scieval 服务模板只作为历史备份或回退参考，使用前必须重新短测。
+host-network 服务访问模式：job 内启动 HTTP 服务，开发机访问日志中的内网 IP 和端口。2026-08-11 当前默认使用 ai4solver CPU rjob；旧 ai4sdata/scieval 服务模板只作为历史备份或回退参考，使用前必须重新短测。
 
 ```bash
-JOB=codex-skill-http-service-llmagent-$(date +%s)
+JOB=codex-skill-http-service-ai4solver-$(date +%s)
 rjob submit --name "$JOB" \
   -P 1 \
   --cpu=1 \
   --memory=4000 \
-  --charged-group=llmagent_cpu_task \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --charged-group=ai4solver_cpu \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
-  -- bash -lc 'IP=$(hostname -I | awk "{print \$1}"); echo SERVICE_IP=$IP; SERVE_DIR="/mnt/shared-storage-user/xuwanghan/projects/.tmp/$JOB-http"; mkdir -p "$SERVE_DIR"; echo codex_service_ok > "$SERVE_DIR/index.html"; cd "$SERVE_DIR"; python3 -m http.server 18081 --bind 0.0.0.0 & pid=$!; echo SERVICE_READY; sleep 180; kill $pid 2>/dev/null || true; cd /; rm -rf "$SERVE_DIR"'
+  -- bash -lc 'IP=$(hostname -I | awk "{print \$1}"); echo SERVICE_IP=$IP; SERVE_DIR="/mnt/shared-storage-user/luoyidong/projects/.tmp/$JOB-http"; mkdir -p "$SERVE_DIR"; echo codex_service_ok > "$SERVE_DIR/index.html"; cd "$SERVE_DIR"; python3 -m http.server 18081 --bind 0.0.0.0 & pid=$!; echo SERVICE_READY; sleep 180; kill $pid 2>/dev/null || true; cd /; rm -rf "$SERVE_DIR"'
 sleep 20
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob get "$JOB"
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob logs job "$JOB" --tail-lines 40
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob get "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob logs job "$JOB" --tail-lines 40
 curl --max-time 10 http://<SERVICE_IP_FROM_LOGS>:18081/
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob delete "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob delete "$JOB"
 ```
 
 ai4sdata host-network 服务模板，历史备份；2026-08-11 起不作为默认模板：
@@ -33,10 +33,10 @@ rjob submit --name "$JOB" \
   --cpu=1 \
   --memory=4000 \
   --charged-group=ai4sdata_cpu_task \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
-  -- bash -lc 'IP=$(hostname -I | awk "{print \$1}"); echo SERVICE_IP=$IP; SERVE_DIR="/mnt/shared-storage-user/xuwanghan/projects/.tmp/$JOB-http"; mkdir -p "$SERVE_DIR"; echo codex_service_ok > "$SERVE_DIR/index.html"; cd "$SERVE_DIR"; python3 -m http.server 18081 --bind 0.0.0.0 & pid=$!; echo SERVICE_READY; sleep 180; kill $pid 2>/dev/null || true; cd /; rm -rf "$SERVE_DIR"'
+  -- bash -lc 'IP=$(hostname -I | awk "{print \$1}"); echo SERVICE_IP=$IP; SERVE_DIR="/mnt/shared-storage-user/luoyidong/projects/.tmp/$JOB-http"; mkdir -p "$SERVE_DIR"; echo codex_service_ok > "$SERVE_DIR/index.html"; cd "$SERVE_DIR"; python3 -m http.server 18081 --bind 0.0.0.0 & pid=$!; echo SERVICE_READY; sleep 180; kill $pid 2>/dev/null || true; cd /; rm -rf "$SERVE_DIR"'
 sleep 20
 rjob get "$JOB"
 rjob logs job "$JOB" --tail-lines 40
@@ -100,15 +100,7 @@ curl --max-time 20 "http://$SERVICE_IP:$PORT/v1/models"
 ```bash
 ssh -N -T \
   -L <local_port>:<service_ip>:<service_port> \
-  agent.xuwanghan+root.ailab-llmagent.ws@h.pjlab.org.cn
-```
-
-旧的 `ailab-ai4sdata.ws` workspace 保留为历史/备用入口；如果需要旧 workspace 或 `llmagent` 入口不可用，只替换 SSH 远端登录名，转发目标 `<service_ip>:<service_port>` 仍必须来自 job 日志或实际服务信息：
-
-```bash
-ssh -N -T \
-  -L <local_port>:<service_ip>:<service_port> \
-  agent.xuwanghan+root.ailab-ai4sdata.ws@h.pjlab.org.cn
+  yidong.luoyidong+root.ailab-ai4solver.ws@h.pjlab.org.cn
 ```
 
 如果同时有多个内网服务，可以转发多个端口：
@@ -117,7 +109,7 @@ ssh -N -T \
 ssh -N -T \
   -L <local_port_1>:<service_ip_1>:<service_port_1> \
   -L <local_port_2>:<service_ip_2>:<service_port_2> \
-  agent.xuwanghan+root.ailab-llmagent.ws@h.pjlab.org.cn
+  yidong.luoyidong+root.ailab-ai4solver.ws@h.pjlab.org.cn
 ```
 
 参数含义：
@@ -135,7 +127,7 @@ ssh -N -T \
 ssh -N -T \
   -L 18010:100.96.167.106:8010 \
   -L 18011:100.101.195.51:8011 \
-  agent.xuwanghan+root.ailab-llmagent.ws@h.pjlab.org.cn
+  yidong.luoyidong+root.ailab-ai4solver.ws@h.pjlab.org.cn
 ```
 
 示例含义：
@@ -193,9 +185,9 @@ from openai import OpenAI
 
 api_key = "EMPTY"
 worker_id = "<worker-id>"
-partition = "llmagent"  # 2026-08-11 current default; legacy backups: "ai4sdata" or "scieval"
+partition = "ai4solver"  # 2026-08-11 current default; legacy backups: "ai4sdata" or "scieval"
 port = 8000
-url = f"https://h.pjlab.org.cn/kapi/workspace.kubebrain.io/ailab-{partition}/{worker_id}.xuwanghan/{port}/v1"
+url = f"https://h.pjlab.org.cn/kapi/workspace.kubebrain.io/ailab-{partition}/{worker_id}.luoyidong/{port}/v1"
 
 ak = os.environ["PJLAB_KAPI_AK"]
 sk = os.environ["PJLAB_KAPI_SK"]
@@ -230,4 +222,4 @@ add_no_proxy_if_private(url)
 - 多 GPU 训练：用单个 `rjob` 申请多卡，设置 `NPROC_PER_NODE=<gpu数>`、`CUDA_VISIBLE_DEVICES=0,1,...`、固定 `MASTER_PORT`。
 - GPU 服务 + CPU 评测：GPU rjob 部署模型服务；CPU worker 或确认过代理认证方案的 CPU rjob 运行评测脚本；CPU 调 GPU 内网 URL，不让私网流量走代理。
 - 多个 CPU/GPU worker 协作：先记录每个 worker id、内网 IP、端口、分区和任务角色；只在 CPU 节点做联网和调度，GPU 节点只跑模型计算或服务。
-- 需要下载依赖：先征得用户同意，再在 CPU worker 或开发机下载到 `/mnt/shared-storage-user/xuwanghan/projects/<project>` 的项目局部路径；超过 5G 的数据或权重放到 `/mnt/shared-storage-gpfs2/sciprismax2/xuwanghan/`；GPU 作业从共享存储读取，不在 GPU 节点联网安装。
+- 需要下载依赖：先征得用户同意，再在 CPU worker 或开发机下载到 `/mnt/shared-storage-user/luoyidong/projects/<project>` 的项目局部路径；超过 5G 的数据或权重放到 `/mnt/shared-storage-gpfs2/ai4solver/luoyidong/`；GPU 作业从共享存储读取，不在 GPU 节点联网安装。

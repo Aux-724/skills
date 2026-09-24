@@ -1,5 +1,7 @@
 # Rjob Tasks
 
+> **2026-09-24 本机实测**：当前默认 CPU `ai4solver_cpu` / GPU `ai4solver_gpu` + `--namespace=ailab-ai4solver`；`rjob list` 可用。模板中的 `--mount=gpfs://...` 卷名和镜像可用性未经本团队确认；worker 看不到本机 `/home` 和 `/data`，提交前先解决共享存储。文中 scieval / ai4sdata 模板是上游作者团队的历史备份，与本项目无关。
+
 ## 目录
 
 - [rjob 工作流](#rjob-工作流)
@@ -10,16 +12,16 @@
 
 ## rjob 工作流
 
-1. 在个人项目根目录下准备 `command.sh`，例如 `/mnt/shared-storage-user/xuwanghan/projects/<project>/jobs/<name>.sh`。
+1. 在个人项目根目录下准备 `command.sh`，例如 `/mnt/shared-storage-user/luoyidong/projects/<project>/jobs/<name>.sh`。
 2. 脚本内不要写真实 secret。用环境变量、secret 文件或运行时注入。
 3. 提交前检查 `--name`、GPU/CPU/memory、分区、namespace、挂载、镜像、端口和工作目录。
 4. 非交互 SSH 提交时，在同一个远端 shell 中先执行 `source /etc/profile.d/ssh-init.sh 2>/dev/null || true`。
 5. 先用 `rjob submit --dry-run true ...` 做语法和资源字段检查；确认无误后去掉 `--dry-run true` 正式提交。
 6. 用 `rjob submit ... -- bash command.sh` 提交。
 7. 提交后记录 job name、job id、worker id 或服务 IP；只摘录必要日志，不复制 secret。
-8. 2026-08-11 当前 rjob 默认使用 GPU `llmagent_gpu` / CPU `llmagent_cpu_task` + `--namespace=ailab-llmagent`；查询、日志和删除使用临时前缀 `KUBEBRAIN_NAMESPACE=ailab-llmagent`。ai4sdata/scieval 模板是历史备份模板，不要删除；只有用户明确要求回退、资源恢复或排查历史任务时再使用。
+8. 2026-08-11 当前 rjob 默认使用 GPU `ai4solver_gpu` / CPU `ai4solver_cpu` + `--namespace=ailab-ai4solver`；查询、日志和删除使用临时前缀 `KUBEBRAIN_NAMESPACE=ailab-ai4solver`。ai4sdata/scieval 模板是历史备份模板，不要删除；只有用户明确要求回退、资源恢复或排查历史任务时再使用。
 
-最小 dry-run，用于生成并检查 YAML。2026-08-11 当前 CPU rjob 默认使用 llmagent：
+最小 dry-run，用于生成并检查 YAML。2026-08-11 当前 CPU rjob 默认使用 ai4solver：
 
 ```bash
 rjob submit --dry-run true \
@@ -27,9 +29,9 @@ rjob submit --dry-run true \
   -P 1 \
   --cpu=1 \
   --memory=4000 \
-  --charged-group=llmagent_cpu_task \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --charged-group=ai4solver_cpu \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=false \
   -- bash -lc "echo dryrun"
@@ -46,7 +48,7 @@ rjob submit --dry-run true \
   --memory=4000 \
   --charged-group=scieval_cpu_task \
   --namespace=ailab-scieval \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=false \
   -- bash -lc "echo dryrun"
@@ -62,7 +64,7 @@ rjob submit --dry-run true \
   --cpu=1 \
   --memory=4000 \
   --charged-group=ai4sdata_cpu_task \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -- bash -lc "echo dryrun"
@@ -92,7 +94,7 @@ KUBEBRAIN_NAMESPACE=<namespace> rjob events <job-name>
 KUBEBRAIN_NAMESPACE=<namespace> rjob logs job <job-name> --tail-lines 100
 ```
 
-llmagent 的 namespace 通常是 `ailab-llmagent`，scieval 历史备份 namespace 通常是 `ailab-scieval`。ai4sdata 历史备份通常不需要 namespace 前缀；如果某个命令查不到任务，先核对任务实际提交的 namespace 和 charged group。
+ai4solver 的 namespace 通常是 `ailab-ai4solver`，scieval 历史备份 namespace 通常是 `ailab-scieval`。ai4sdata 历史备份通常不需要 namespace 前缀；如果某个命令查不到任务，先核对任务实际提交的 namespace 和 charged group。
 
 数据源要分层，不要把 `rjob` 信息和网页监控信息混成一个来源：
 
@@ -331,27 +333,27 @@ GPU 总卡数
 
 ## rjob CPU 任务
 
-2026-08-11 当前 CPU rjob 默认使用 llmagent。提交使用 `llmagent_cpu_task` + `--namespace=ailab-llmagent`；查询、日志和删除必须带 `KUBEBRAIN_NAMESPACE=ailab-llmagent`。scieval CPU rjob 是 2026-06-05 已实测的历史备份模板；ai4sdata CPU rjob 是 2026-05 历史已验证模板；旧模板都不要删除，但当前不作为默认提交目标。
+2026-08-11 当前 CPU rjob 默认使用 ai4solver。提交使用 `ai4solver_cpu` + `--namespace=ailab-ai4solver`；查询、日志和删除必须带 `KUBEBRAIN_NAMESPACE=ailab-ai4solver`。scieval CPU rjob 是 2026-06-05 已实测的历史备份模板；ai4sdata CPU rjob 是 2026-05 历史已验证模板；旧模板都不要删除，但当前不作为默认提交目标。
 
-llmagent CPU rjob 最小任务，当前默认模板：
+ai4solver CPU rjob 最小任务，当前默认模板：
 
 ```bash
-JOB=codex-skill-cpu-llmagent-real-$(date +%s)
+JOB=codex-skill-cpu-ai4solver-real-$(date +%s)
 rjob submit --name "$JOB" \
   -P 1 \
   --cpu=1 \
   --memory=4000 \
-  --charged-group=llmagent_cpu_task \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --charged-group=ai4solver_cpu \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=false \
-  -- bash -lc 'set -eo pipefail; echo llmagent_cpu_rjob_start; hostname; echo nproc=$(nproc); test -d /mnt/shared-storage-user/xuwanghan && echo mount_xuwanghan_ok; sleep 10; echo llmagent_cpu_rjob_done'
+  -- bash -lc 'set -eo pipefail; echo ai4solver_cpu_rjob_start; hostname; echo nproc=$(nproc); test -d /mnt/shared-storage-user/luoyidong && echo mount_luoyidong_ok; sleep 10; echo ai4solver_cpu_rjob_done'
 
 sleep 90
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob get "$JOB"
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob logs job "$JOB" --tail-lines 100
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob delete "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob get "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob logs job "$JOB" --tail-lines 100
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob delete "$JOB"
 ```
 
 scieval CPU rjob 最小任务，历史备份；2026-08-11 起不作为默认模板：
@@ -365,10 +367,10 @@ rjob submit --name "$JOB" \
   --memory=4000 \
   --charged-group=scieval_cpu_task \
   --namespace=ailab-scieval \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=false \
-  -- bash -lc 'set -eo pipefail; echo scieval_cpu_rjob_start; hostname; echo nproc=$(nproc); test -d /mnt/shared-storage-user/xuwanghan && echo mount_xuwanghan_ok; sleep 10; echo scieval_cpu_rjob_done'
+  -- bash -lc 'set -eo pipefail; echo scieval_cpu_rjob_start; hostname; echo nproc=$(nproc); test -d /mnt/shared-storage-user/luoyidong && echo mount_luoyidong_ok; sleep 10; echo scieval_cpu_rjob_done'
 
 sleep 90
 KUBEBRAIN_NAMESPACE=ailab-scieval rjob get "$JOB"
@@ -386,10 +388,10 @@ rjob submit --name "$JOB" \
   --cpu=1 \
   --memory=4000 \
   --charged-group=ai4sdata_cpu_task \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
-  -- bash -lc 'echo real_rjob_start; hostname; test -d /mnt/shared-storage-user/xuwanghan && echo mount_xuwanghan_ok; echo real_rjob_done'
+  -- bash -lc 'echo real_rjob_start; hostname; test -d /mnt/shared-storage-user/luoyidong && echo mount_luoyidong_ok; echo real_rjob_done'
 sleep 20
 rjob get "$JOB"
 rjob logs job "$JOB" --tail-lines 50
@@ -406,33 +408,33 @@ rjob submit --dry-run true \
   --cpu=8 \
   --memory=32000 \
   --charged-group=ai4sdata_cpu_task \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -- bash command.sh
 ```
 
-CPU rjob 外网代理必须使用 `--host-network=false`，并先用短任务验证。下面是当前 llmagent CPU rjob 模板；跑到 `HTTP/2 200`、`HTTP/1.1 200` 或 `llmagent_cpu_network_rjob_done` 明确出现后，才能继续正式联网任务。
+CPU rjob 外网代理必须使用 `--host-network=false`，并先用短任务验证。下面是当前 ai4solver CPU rjob 模板；跑到 `HTTP/2 200`、`HTTP/1.1 200` 或 `ai4solver_cpu_network_rjob_done` 明确出现后，才能继续正式联网任务。
 
 ```bash
-JOB=codex-skill-cpu-llmagent-net-$(date +%s)
+JOB=codex-skill-cpu-ai4solver-net-$(date +%s)
 rjob submit --name "$JOB" \
   -P 1 \
   --cpu=1 \
   --memory=4000 \
-  --charged-group=llmagent_cpu_task \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --charged-group=ai4solver_cpu \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=false \
-  -- bash -lc 'set -eo pipefail; echo llmagent_cpu_network_rjob_start; sleep 5; source /jobutils/scripts/worker_init.sh 2>/dev/null || true; unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ftp_proxy all_proxy ALL_PROXY; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; export NO_PROXY=$no_proxy; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I -L --max-time 30 https://www.google.com | sed -n "1,12p"; wget --spider --timeout=30 --tries=1 https://www.google.com; echo llmagent_cpu_network_rjob_done'
+  -- bash -lc 'set -eo pipefail; echo ai4solver_cpu_network_rjob_start; sleep 5; source /jobutils/scripts/worker_init.sh 2>/dev/null || true; unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ftp_proxy all_proxy ALL_PROXY; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; export NO_PROXY=$no_proxy; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I -L --max-time 30 https://www.google.com | sed -n "1,12p"; wget --spider --timeout=30 --tries=1 https://www.google.com; echo ai4solver_cpu_network_rjob_done'
 sleep 110
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob get "$JOB"
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob logs job "$JOB" --tail-lines 140
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob delete "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob get "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob logs job "$JOB" --tail-lines 140
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob delete "$JOB"
 ```
 
 scieval CPU rjob 外网代理，历史备份；2026-08-11 起不作为默认模板：
@@ -446,7 +448,7 @@ rjob submit --name "$JOB" \
   --memory=4000 \
   --charged-group=scieval_cpu_task \
   --namespace=ailab-scieval \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=false \
   -- bash -lc 'set -eo pipefail; echo scieval_cpu_network_rjob_start; sleep 5; source /jobutils/scripts/worker_init.sh 2>/dev/null || true; unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ftp_proxy all_proxy ALL_PROXY; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; export NO_PROXY=$no_proxy; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I -L --max-time 30 https://www.google.com | sed -n "1,12p"; wget --spider --timeout=30 --tries=1 https://www.google.com; echo scieval_cpu_network_rjob_done'
@@ -466,7 +468,7 @@ rjob submit --name "$JOB" \
   --cpu=1 \
   --memory=4000 \
   --charged-group=ai4sdata_cpu_task \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=false \
   -- bash -lc 'set -eo pipefail; echo network_test_start; sleep 5; source /jobutils/scripts/worker_init.sh 2>/dev/null || true; unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ftp_proxy all_proxy ALL_PROXY; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; export NO_PROXY=$no_proxy; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I -L --max-time 30 https://www.google.com | sed -n "1,12p"; wget --spider --timeout=30 --tries=1 https://www.google.com; echo network_test_done'
@@ -482,11 +484,11 @@ rjob delete "$JOB"
 
 1 张 GPU 可以用。资源公式是 `--gpu=1 --cpu=22 --memory=230000`。
 
-2026-08-11 当前 GPU rjob 默认使用 `llmagent_gpu` + `--namespace=ailab-llmagent`。ai4sdata/scieval 的 GPU 模板作为历史备份保留，不要删除。
+2026-08-11 当前 GPU rjob 默认使用 `ai4solver_gpu` + `--namespace=ailab-ai4solver`。ai4sdata/scieval 的 GPU 模板作为历史备份保留，不要删除。
 
 增量备注：有用户反馈 scieval 2 GPU 训练在一些场景下不能加 `--host-network=true`。下面历史模板里的 `--host-network=true` 行先保留，不做全局替换；正式训练前按当前任务做 `--dry-run true` 和最小短任务验证。如果 scieval 2 GPU 训练出现调度、网络或容器启动异常，优先尝试去掉 `--host-network=true`，并记录本次任务实际可用的提交参数。
 
-llmagent_gpu 1 GPU dry-run 模板，当前默认：
+ai4solver_gpu 1 GPU dry-run 模板，当前默认：
 
 ```bash
 rjob submit --dry-run true \
@@ -495,13 +497,13 @@ rjob submit --dry-run true \
   --gpu=1 \
   --memory=230000 \
   --cpu=22 \
-  --charged-group=llmagent_gpu \
+  --charged-group=ai4solver_gpu \
   --private-machine=group \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
@@ -520,10 +522,10 @@ rjob submit --dry-run true \
   --cpu=22 \
   --charged-group=ai4sdata_gpu \
   --private-machine=group \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
@@ -543,39 +545,39 @@ rjob submit --dry-run true \
   --charged-group=scieval_gpu \
   --private-machine=group \
   --namespace=ailab-scieval \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
   -- bash command.sh
 ```
 
-llmagent_gpu GPU rjob，当前默认：
+ai4solver_gpu GPU rjob，当前默认：
 
 ```bash
-JOB=codex-skill-gpu-llmagent-real-$(date +%s)
+JOB=codex-skill-gpu-ai4solver-real-$(date +%s)
 rjob submit --name "$JOB" \
   -P 1 \
   --gpu=2 \
   --memory=460000 \
   --cpu=44 \
-  --charged-group=llmagent_gpu \
+  --charged-group=ai4solver_gpu \
   --private-machine=group \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
   -- bash -lc 'echo gpu_rjob_start; hostname; nvidia-smi -L; echo gpu_rjob_done'
 sleep 20
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob get "$JOB"
-KUBEBRAIN_NAMESPACE=ailab-llmagent rjob delete "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob get "$JOB"
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob delete "$JOB"
 ```
 
 ai4sdata GPU rjob，历史模板；2026-06-05 当前 ai4sdata 无 CPU/GPU 资源时不要直接提交：
@@ -590,10 +592,10 @@ rjob submit --name "$JOB" \
   --cpu=44 \
   --charged-group=ai4sdata_gpu \
   --private-machine=group \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
@@ -616,10 +618,10 @@ rjob submit --name "$JOB" \
   --charged-group=scieval_gpu \
   --private-machine=group \
   --namespace=ailab-scieval \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
@@ -631,7 +633,7 @@ KUBEBRAIN_NAMESPACE=ailab-scieval rjob delete "$JOB"
 
 常规 GPU 模板。正式训练或部署时，把最后一行改为 `-- bash command.sh`，并确保 `command.sh` 已放在共享存储中；需要检查语法时保留 `--dry-run true`。
 
-llmagent_gpu GPU 模板，当前默认：
+ai4solver_gpu GPU 模板，当前默认：
 
 ```bash
 rjob submit --dry-run true \
@@ -640,13 +642,13 @@ rjob submit --dry-run true \
   --gpu=2 \
   --memory=460000 \
   --cpu=44 \
-  --charged-group=llmagent_gpu \
+  --charged-group=ai4solver_gpu \
   --private-machine=group \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
@@ -665,10 +667,10 @@ rjob submit --dry-run true \
   --cpu=44 \
   --charged-group=ai4sdata_gpu \
   --private-machine=group \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
@@ -688,10 +690,10 @@ rjob submit --dry-run true \
   --charged-group=scieval_gpu \
   --private-machine=group \
   --namespace=ailab-scieval \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
   --host-network=true \
   -e DISTRIBUTED_JOB=true \
@@ -700,7 +702,7 @@ rjob submit --dry-run true \
 
 ## 作业脚本骨架
 
-GPU 脚本不要依赖外网。下面是正式脚本应遵循的局部环境设置；LLM 训练/部署默认使用 `llmv2`，`<project>` 和启动命令必须由具体任务决定，不能盲目照抄执行。
+GPU 脚本不要依赖外网。下面是正式脚本应遵循的局部环境设置；conda 环境名必须由具体任务和用户确认（本机当前只有 `base`，上游的 `llmv2` 在本团队不存在），`<project>` 和启动命令必须由具体任务决定，不能盲目照抄执行。
 
 GPU rjob runner 的 CUDA 规则：
 
@@ -733,12 +735,12 @@ export LD_LIBRARY_PATH="$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}"
 unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 echo "[INFO] Proxy disabled."
 
-conda config --append envs_dirs /mnt/shared-storage-user/xuwanghan/conda_env
+conda config --append envs_dirs /mnt/shared-storage-user/luoyidong/conda_env
 source /root/miniconda3/bin/activate llmv2
 if [ "$JOB_CONDA_ENV" != "llmv2" ]; then
   source /root/miniconda3/bin/activate "$JOB_CONDA_ENV"
 fi
-cd /mnt/shared-storage-user/xuwanghan/projects/<project>
+cd /mnt/shared-storage-user/luoyidong/projects/<project>
 
 export NPROC_PER_NODE=<num_gpus>
 export CUDA_VISIBLE_DEVICES=0,1
@@ -765,7 +767,7 @@ set -eo pipefail
 echo "[INFO] Start CPU network job."
 sleep 5
 
-PROJECT_DIR="/mnt/shared-storage-user/xuwanghan/projects/<project>"
+PROJECT_DIR="/mnt/shared-storage-user/luoyidong/projects/<project>"
 CONDA_ENV="agent"
 
 source /jobutils/scripts/worker_init.sh 2>/dev/null || true
@@ -780,7 +782,7 @@ export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,
 env | grep -i proxy
 curl -I --max-time 20 https://www.google.com
 
-conda config --append envs_dirs /mnt/shared-storage-user/xuwanghan/conda_env
+conda config --append envs_dirs /mnt/shared-storage-user/luoyidong/conda_env
 source /root/miniconda3/bin/activate "$CONDA_ENV"
 cd "$PROJECT_DIR"
 

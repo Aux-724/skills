@@ -31,10 +31,10 @@ Workflow for editable PowerPoint decks: generate, beautify, template, and narrat
 
 ### lab-cluster-1
 
-Lab cluster 1 / PJLAB workflow for dev-host SSH, paths, proxies, model weights, raw `rlaunch`/`rjob` commands, service access, and troubleshooting.
+Lab cluster 1 / PJLAB workflow for paths, proxies, model weights, raw `rlaunch`/`rjob` commands, service access, and troubleshooting. **Localized on 2026-09-24 for the ailab-ai4solver project** (same H cluster, different team): the upstream author's account, dev hosts, partitions, namespaces, and paths were replaced with locally verified values, and the SSH-relay workflow was rewritten for agents that run directly on the dev-machine workspace pod. See the localization note at the top of [`lab-cluster-1/SKILL.md`](lab-cluster-1/SKILL.md).
 
-- Source: https://github.com/black-yt/skills/tree/main/lab-cluster-1 (`lab-cluster-1/`)
-- License: none published. [black-yt/skills](https://github.com/black-yt/skills) has no `LICENSE` file, and GitHub reports no license. See [ATTRIBUTION.md](ATTRIBUTION.md).
+- Source: https://github.com/black-yt/skills/tree/main/lab-cluster-1 (`lab-cluster-1/`), modified as described above
+- License: none published. [black-yt/skills](https://github.com/black-yt/skills) has no `LICENSE` file, and GitHub reports no license. The base skill's copyright stays with the upstream author. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ## Use
 

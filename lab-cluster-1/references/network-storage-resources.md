@@ -1,5 +1,7 @@
 # Network Storage Resources
 
+> **2026-09-24 本机实测**：本机是 workspace pod，未挂载任何 gpfs 共享存储；下文的 `/mnt/shared-storage-user/*`、`/mnt/shared-storage-gpfs2/*` 及公共模型/软件目录路径来自上游作者环境，本机不存在，仅当团队确认共享存储后作参考。本机实际存储：`/` 100G（项目根 `/home/luoyidong/workspace`）、`/data` 200G（大文件）、`/jobutils` 只读。"GPU 节点不联网、CPU 节点走代理联网"等网络行为规则仍然适用。
+
 ## 网络代理
 
 不要依赖 `.bashrc` 里的 alias/function，但需要理解其语义并用原始命令复现。远端 `.bashrc` 中和代理相关的常用项：
@@ -61,20 +63,20 @@ git fetch
 git push
 ```
 
-llmagent 4 CPU worker 内代理和外网访问检查。2026-08-11 当前默认使用 llmagent；命令会自动退出，不留下空闲 worker：
+ai4solver 4 CPU worker 内代理和外网访问检查。2026-08-11 当前默认使用 ai4solver；命令会自动退出，不留下空闲 worker：
 
 ```bash
 rlaunch \
   --cpu=4 \
   --memory=16000 \
-  --charged-group=llmagent_cpu_task \
-  --namespace=ailab-llmagent \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --charged-group=ai4solver_cpu \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --max-wait-duration=5m \
-  -- bash -lc 'set -eo pipefail; echo worker_host=$(hostname); echo nproc=$(nproc); source /jobutils/scripts/worker_init.sh 2>/dev/null || true; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; export NO_PROXY=$no_proxy; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I -L --max-time 30 https://www.google.com | sed -n "1,12p"; wget --spider --timeout=30 --tries=1 https://www.google.com; echo llmagent_cpu_network_ok'
+  -- bash -lc 'set -eo pipefail; echo worker_host=$(hostname); echo nproc=$(nproc); source /jobutils/scripts/worker_init.sh 2>/dev/null || true; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; export NO_PROXY=$no_proxy; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I -L --max-time 30 https://www.google.com | sed -n "1,12p"; wget --spider --timeout=30 --tries=1 https://www.google.com; echo ai4solver_cpu_network_ok'
 ```
 
 scieval 4 CPU worker 内代理和外网访问检查，历史备份；2026-08-11 起不作为默认分区：
@@ -86,10 +88,10 @@ rlaunch \
   --memory=16000 \
   --charged-group=scieval_cpu_task \
   --namespace=ailab-scieval \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --max-wait-duration=5m \
   -- bash -lc 'set -eo pipefail; echo worker_host=$(hostname); echo nproc=$(nproc); source /jobutils/scripts/worker_init.sh 2>/dev/null || true; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; export NO_PROXY=$no_proxy; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I -L --max-time 30 https://www.google.com | sed -n "1,12p"; wget --spider --timeout=30 --tries=1 https://www.google.com; echo scieval_cpu_network_ok'
 ```
@@ -102,10 +104,10 @@ rlaunch \
   --cpu=4 \
   --memory=16000 \
   --charged-group=ai4sdata_cpu_task \
-  --mount=gpfs://gpfs1/xuwanghan:/mnt/shared-storage-user/xuwanghan \
-  --mount=gpfs://gpfs1/sciprismax:/mnt/shared-storage-user/sciprismax \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/sciprismax2:/mnt/shared-storage-gpfs2/sciprismax2 \
+  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --max-wait-duration=2m \
   -- bash -lc 'source /jobutils/scripts/worker_init.sh 2>/dev/null || true; source <(curl -sSL http://deploy.i.h.pjlab.org.cn/infra/scripts/setup_proxy.sh); export no_proxy=10.140.158.153,100.100.125.235,10.0.0.0/8,100.96.0.0/12,0.0.0.0,127.0.0.1,localhost,10.140.213.96,10.140.213.145,.pjlab.org.cn,10.140.14.204,10.140.2.204,10.140.31.254,10.140.14.254,p-ceph-norm-outside.pjlab.org.cn,p-ceph-norm-inside.pjlab.org.cn,10.140.97.32,10.140.96.147; env | grep -i "^http_proxy\|^https_proxy\|^no_proxy"; curl -I --max-time 20 https://www.google.com | sed -n "1,5p"'
 ```
@@ -128,7 +130,7 @@ add_no_proxy_if_private(url)
 
 ## 模型权重与公共软件路径
 
-优先复用集群已有模型，避免重复下载大模型。保存路径不能随便改，项目目录、开发机本地盘、worker 本地盘和临时目录经常容量不够。超过 5G 的数据或权重应放到 `/mnt/shared-storage-gpfs2/sciprismax2/xuwanghan/` 下。
+优先复用集群已有模型，避免重复下载大模型。保存路径不能随便改，项目目录、开发机本地盘、worker 本地盘和临时目录经常容量不够。超过 5G 的数据或权重应放到 `/mnt/shared-storage-gpfs2/ai4solver/luoyidong/` 下。
 
 公共路径结构：
 
@@ -144,7 +146,7 @@ add_no_proxy_if_private(url)
 更大的模型优先保存到：
 
 ```bash
-/mnt/shared-storage-gpfs2/sciprismax2/xuwanghan/models
+/mnt/shared-storage-gpfs2/ai4solver/luoyidong/models
 ```
 
 只读查找模型命令：
@@ -181,7 +183,7 @@ models--Org--Model/
 ```bash
 SCRIPT="/abs/path/to/skills/lab-cluster-1/scripts/hf_cache_to_model_dir.py"
 CACHE_DIR="/mnt/shared-storage-gpfs2/gpfs2-shared-public/huggingface/hub/models--Org--Model"
-OUT_DIR="/mnt/shared-storage-gpfs2/sciprismax2/xuwanghan/models/Org--Model"
+OUT_DIR="/mnt/shared-storage-gpfs2/ai4solver/luoyidong/models/Org--Model"
 
 python3 "$SCRIPT" \
   --cache-dir "$CACHE_DIR" \
@@ -216,12 +218,12 @@ find "$OUT_DIR" -maxdepth 2 -type f \( -name "*.safetensors" -o -name "*.bin" -o
 
 - 不要假设用户给出的迁移源路径一定存在。先 `test -d` 或 `find` 确认源目录，再 `rclone copy`。
 - 如果目标目录已经存在，先确认是否复用、增量同步或另存新目录；不要覆盖或移动现有权重。
-- 大模型迁移前先确认目标盘容量，超过 5G 的权重放到 `/mnt/shared-storage-gpfs2/sciprismax2/xuwanghan/` 下。
+- 大模型迁移前先确认目标盘容量，超过 5G 的权重放到 `/mnt/shared-storage-gpfs2/ai4solver/luoyidong/` 下。
 
 使用模型前，先把 `MODEL_PATH` 指向已存在目录，不要重新下载：
 
 ```bash
-MODEL_PATH="/mnt/shared-storage-gpfs2/sciprismax2/xuwanghan/models/Qwen--Qwen3.5-9B"
+MODEL_PATH="/mnt/shared-storage-gpfs2/ai4solver/luoyidong/models/Qwen--Qwen3.5-9B"
 test -d "$MODEL_PATH" || { echo "missing model: $MODEL_PATH"; exit 1; }
 ```
 
@@ -230,7 +232,7 @@ test -d "$MODEL_PATH" || { echo "missing model: $MODEL_PATH"; exit 1; }
 ```bash
 RCLONE="${RCLONE:-/abs/path/to/rclone}"
 SRC="/mnt/shared-storage-gpfs2/gpfs2-shared-public/huggingface/zskj-hub/models-Qwen-Qwen3.5-35B-A3B"
-DST="/mnt/shared-storage-gpfs2/sciprismax2/xuwanghan/models/Qwen--Qwen3.5-35B-A3B"
+DST="/mnt/shared-storage-gpfs2/ai4solver/luoyidong/models/Qwen--Qwen3.5-35B-A3B"
 test -x "$RCLONE"
 test -d "$SRC"
 test -d "$(dirname "$DST")"
@@ -271,9 +273,9 @@ memory  = 4000 * C
 
 | 场景 | 分区 | charged group | namespace | private machine |
 | --- | --- | --- | --- | --- |
-| rlaunch GPU / rjob GPU | llmagent | `llmagent_gpu` | `ailab-llmagent` | `group` |
-| rlaunch CPU worker | llmagent | `llmagent_cpu_task` | `ailab-llmagent` | 不加 |
-| rjob CPU | llmagent | `llmagent_cpu_task` | `ailab-llmagent` | 不加 |
+| rlaunch GPU / rjob GPU | ai4solver | `ai4solver_gpu` | `ailab-ai4solver` | `group` |
+| rlaunch CPU worker | ai4solver | `ai4solver_cpu` | `ailab-ai4solver` | 不加 |
+| rjob CPU | ai4solver | `ai4solver_cpu` | `ailab-ai4solver` | 不加 |
 | rlaunch GPU / rjob GPU | ai4sdata，历史备份 | `ai4sdata_gpu` | 不加 | `group` |
 | rlaunch GPU / rjob GPU | scieval，历史备份 | `scieval_gpu` | `ailab-scieval` | `group` |
 | rlaunch CPU worker | ai4sdata，历史备份 | `ai4sdata_cpu_task` | 不加 | 不加 |
@@ -283,17 +285,17 @@ memory  = 4000 * C
 
 分区状态记录：
 
-| 日期 | llmagent | ai4sdata | scieval | 默认选择 |
+| 日期 | ai4solver | ai4sdata | scieval | 默认选择 |
 | --- | --- | --- | --- | --- |
 | 2026-05 | 尚未作为默认分区记录 | CPU rjob、GPU rjob 和相关模板已验证 | GPU rjob 已验证；CPU worker 历史上可用 | 按任务选择 ai4sdata 或 scieval |
 | 2026-06-05 | 尚未作为默认分区记录 | 当时没有 CPU/GPU 可用资源；模板保留为历史已验证配置 | `rlaunch` CPU worker、CPU rjob、CPU 外网代理已验证 | 当时 CPU 默认用 scieval；GPU 先按实际资源验证 |
-| 2026-08-11 | 当前默认分区；GPU charged group 使用 `llmagent_gpu`，CPU 使用 `llmagent_cpu_task`，namespace 使用 `ailab-llmagent` | 历史备份；不作为默认提交目标 | 历史备份；不作为默认提交目标 | 默认使用 llmagent 体系；旧分区仅在用户确认回退、资源恢复或排查历史任务时使用 |
+| 2026-08-11 | 当前默认分区；GPU charged group 使用 `ai4solver_gpu`，CPU 使用 `ai4solver_cpu`，namespace 使用 `ailab-ai4solver` | 历史备份；不作为默认提交目标 | 历史备份；不作为默认提交目标 | 默认使用 ai4solver 体系；旧分区仅在用户确认回退、资源恢复或排查历史任务时使用 |
 
 当前使用边界：
 
-- 2026-08-11 当前 `rlaunch` 和 `rjob` 默认使用 llmagent 体系：GPU charged group 用 `llmagent_gpu`，CPU charged group 用 `llmagent_cpu_task`，统一带 `--namespace=ailab-llmagent`。
-- llmagent rjob 查询、日志和删除时带 `KUBEBRAIN_NAMESPACE=ailab-llmagent`；不要拿 ai4sdata 或 scieval 的查询前缀直接查当前任务。
+- 2026-08-11 当前 `rlaunch` 和 `rjob` 默认使用 ai4solver 体系：GPU charged group 用 `ai4solver_gpu`，CPU charged group 用 `ai4solver_cpu`，统一带 `--namespace=ailab-ai4solver`。
+- ai4solver rjob 查询、日志和删除时带 `KUBEBRAIN_NAMESPACE=ailab-ai4solver`；不要拿 ai4sdata 或 scieval 的查询前缀直接查当前任务。
 - ai4sdata 分区和 scieval 分区当前不作为默认提交目标；下面保留的 ai4sdata/scieval 命令只作为历史备份、回退参考和历史任务排查入口。
 - scieval 在 2026-06-05 曾验证过 CPU task、CPU rjob 和 CPU 外网代理；这些结论是历史备份，不表示当前默认仍是 scieval。
-- GPU rjob 历史上 ai4sdata/scieval 都跑通过；当前默认改用 llmagent 后，正式训练或部署前仍要以 predict-only、dry-run、最小短任务和调度器状态为准。
+- GPU rjob 历史上 ai4sdata/scieval 都跑通过；当前默认改用 ai4solver 后，正式训练或部署前仍要以 predict-only、dry-run、最小短任务和调度器状态为准。
 - 保留 ai4sdata/scieval 模板是为了资源恢复或用户要求回退时复用；恢复后仍必须先短测，不要直接按历史结果提交正式任务。
