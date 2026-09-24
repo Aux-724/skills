@@ -2,7 +2,7 @@
 
 Personal collection of agent skills for daily workflows.
 
-个人日常使用的 agent skills 集合。三个技能分别来自上游仓库，按原许可证保留。
+个人日常使用的 agent skills 集合。技能分别来自上游仓库，按原许可证保留；未声明许可证的上游会在下文写明。
 
 ## Included skills
 
@@ -29,6 +29,13 @@ Workflow for editable PowerPoint decks: generate, beautify, template, and narrat
 - Source: https://github.com/hugohe3/ppt-master (`skills/ppt-master/`)
 - License: [MIT](ppt-master/LICENSE), plus icon and sound notices inside the package
 
+### lab-cluster-1
+
+Lab cluster 1 / PJLAB workflow for dev-host SSH, paths, proxies, model weights, raw `rlaunch`/`rjob` commands, service access, and troubleshooting.
+
+- Source: https://github.com/black-yt/skills/tree/main/lab-cluster-1 (`lab-cluster-1/`)
+- License: none published. [black-yt/skills](https://github.com/black-yt/skills) has no `LICENSE` file, and GitHub reports no license. See [ATTRIBUTION.md](ATTRIBUTION.md).
+
 ## Use
 
 ### Path
@@ -42,6 +49,7 @@ mkdir -p ~/.cursor/skills
 ln -s "$(pwd)/scientific-figure-making" ~/.cursor/skills/scientific-figure-making
 ln -s "$(pwd)/design-taste-frontend" ~/.cursor/skills/design-taste-frontend
 ln -s "$(pwd)/ppt-master" ~/.cursor/skills/ppt-master
+ln -s "$(pwd)/lab-cluster-1" ~/.cursor/skills/lab-cluster-1
 ```
 
 Claude Code and Codex use `~/.claude/skills` and `~/.codex/skills` the same way.
@@ -55,6 +63,7 @@ npx skills add https://github.com/Aux-724/skills
 npx skills add https://github.com/Aux-724/skills --skill scientific-figure-making
 npx skills add https://github.com/Aux-724/skills --skill design-taste-frontend
 npx skills add https://github.com/Aux-724/skills --skill ppt-master
+npx skills add https://github.com/Aux-724/skills --skill lab-cluster-1
 ```
 
 ## ppt-master

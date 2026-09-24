@@ -35,6 +35,16 @@ Collection-only files are `README.md`, `ATTRIBUTION.md`, `.gitignore`, the `skil
   - Sounds: [`ppt-master/templates/sounds/THIRD_PARTY_NOTICES.md`](ppt-master/templates/sounds/THIRD_PARTY_NOTICES.md)
 - Optional PDF conversion imports PyMuPDF (AGPL-3.0). It is not vendored here. See the note in [`ppt-master/requirements.txt`](ppt-master/requirements.txt).
 
+## lab-cluster-1
+
+- Upstream: https://github.com/black-yt/skills
+- Source URL: https://github.com/black-yt/skills/tree/main/lab-cluster-1
+- Upstream path: `lab-cluster-1/`
+- Commit: [`dbf510f2105da21561e8e114a963a6e36885cd46`](https://github.com/black-yt/skills/commit/dbf510f2105da21561e8e114a963a6e36885cd46) (2026-09-22, "Add LaTeX migration project startup instructions")
+- License: none. The upstream repository has no `LICENSE`, `NOTICE`, or `COPYING` file, no SPDX header in this skill, and the GitHub repository license field is empty. This collection does not add a license of its own. Copyright stays with the upstream author. Redistribution and reuse are not granted by a license text from that project.
+- Owner: [black-yt](https://github.com/black-yt). The upstream README describes the repository as skills maintained by 徐望瀚 for daily work.
+- What was copied: the entire `lab-cluster-1/` folder (`SKILL.md`, `references/`, and `scripts/hf_cache_to_model_dir.py`). No other skills from that repository were copied.
+
 ### Layout adaptation
 
 Upstream Python treats the skill as `<repo>/skills/ppt-master` and sets the checkout root two directories above the skill (`projects/`, root `requirements.txt`, `git pull`). In this collection the package lives at `ppt-master/`.
