@@ -6,13 +6,28 @@ Personal collection of agent skills for daily workflows.
 
 ## Included skills
 
-| Folder | Purpose | Upstream |
-| --- | --- | --- |
-| [`scientific-figure-making/`](scientific-figure-making/SKILL.md) | Publication-ready matplotlib figures (bars, trends, heatmaps, multi-panel layouts) with the figures4papers house style. | [ChenLiu-1996/figures4papers](https://github.com/ChenLiu-1996/figures4papers) |
-| [`design-taste-frontend/`](design-taste-frontend/SKILL.md) | Anti-slop frontend skill for landing pages, portfolios, and redesigns. This is the taste-skill v2 default (`design-taste-frontend`). | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) |
-| [`ppt-master/`](ppt-master/SKILL.md) | Workflow for editable PowerPoint decks: generate, beautify, template, and narrate PPTX files. | [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) |
+This collection copies third-party skill packages. It does not claim authorship. Full owner, path, commit, and license details are in [ATTRIBUTION.md](ATTRIBUTION.md).
 
-Licenses differ. See [ATTRIBUTION.md](ATTRIBUTION.md). `scientific-figure-making` is **CC BY-NC 4.0** (non-commercial). The other two skills are MIT, with extra notices for icons, sounds, and optional PyMuPDF.
+### scientific-figure-making
+
+Publication-ready matplotlib figures (bars, trends, heatmaps, multi-panel layouts) with the figures4papers house style.
+
+- Source: https://github.com/ChenLiu-1996/figures4papers (`scientific-figure-making/`)
+- License: [CC BY-NC 4.0](scientific-figure-making/LICENSE) (non-commercial)
+
+### design-taste-frontend
+
+Anti-slop frontend skill for landing pages, portfolios, and redesigns. This is the taste-skill v2 default. The install name is `design-taste-frontend`; the upstream folder is `skills/taste-skill/`.
+
+- Source: https://github.com/Leonxlnx/taste-skill (`skills/taste-skill/`)
+- License: [MIT](design-taste-frontend/LICENSE)
+
+### ppt-master
+
+Workflow for editable PowerPoint decks: generate, beautify, template, and narrate PPTX files.
+
+- Source: https://github.com/hugohe3/ppt-master (`skills/ppt-master/`)
+- License: [MIT](ppt-master/LICENSE), plus icon and sound notices inside the package
 
 ## Use
 

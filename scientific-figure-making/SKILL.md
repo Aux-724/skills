@@ -10,6 +10,8 @@ description: >-
   geographic mapping, or Illustrator/Figma-first infographic workflows.
 ---
 
+Source: https://github.com/ChenLiu-1996/figures4papers (`scientific-figure-making/`). Vendored copy; authorship remains with the upstream project.
+
 # Scientific figure making
 
 Open `references/` only as needed; do not preload every file. Start from the table below, then follow links inside the document you opened (and into `figure_*` code via [references/demos.md](references/demos.md)) instead of loading the full reference set up front.

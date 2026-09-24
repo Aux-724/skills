@@ -18,6 +18,8 @@ metadata:
     - "SPONSORS_CN.md"
 ---
 
+Source: https://github.com/hugohe3/ppt-master (`skills/ppt-master/`). Vendored copy; authorship remains with the upstream project.
+
 # PPT Master Skill
 
 PPT Master is a routed presentation workflow. This entry owns global execution discipline and route selection only; each selected route owns its procedure.
