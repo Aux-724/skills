@@ -1,0 +1,12 @@
+# OS / editor
+.DS_Store
+*~
+__pycache__/
+*.pyc
+
+# Local secrets (PPT Master reads .env from the checkout root or the skill directory)
+.env
+
+# Working decks created by ppt-master's project_manager.py
+projects/*
+!projects/README.md
