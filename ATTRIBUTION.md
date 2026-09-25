@@ -2,7 +2,7 @@
 
 This collection vendors copies of upstream skill packages for personal and workflow use. It does not claim authorship of those skills. Each package stays under the upstream license named below. Copyright remains with the upstream authors.
 
-Collection-only files are `README.md`, `ATTRIBUTION.md`, `.gitignore`, the `skills/ppt-master` symlink, the checkout-root notes in `requirements.txt`, and `ppt-master/scripts/repo_layout.py` plus the small root-resolution edits that call it. Copies were taken on 2026-09-24 from the commits below. No upstream release tag was current for these snapshots; the commit is the pin.
+Collection-only files are `README.md`, `ATTRIBUTION.md`, `.gitignore`, the `skills/ppt-master` symlink, the checkout-root notes in `requirements.txt`, and `ppt-master/scripts/repo_layout.py` plus the small root-resolution edits that call it. The first four skills were copied on 2026-09-24 from the commits below. `nature-polishing`, `nature-ref-verifier`, and `nature-shared` were copied on 2026-09-25. No upstream release tag was current for these snapshots; the commit is the pin.
 
 ## scientific-figure-making
 
@@ -58,3 +58,30 @@ These files now call `scripts/repo_layout.py` so both layouts resolve:
 - `scripts/apply_template.py`
 
 `skills/ppt-master` is a symlink to `../ppt-master`, so upstream-relative commands (`python3 skills/ppt-master/scripts/...`) and the root requirements include still work. Each `SKILL.md` keeps its upstream frontmatter; a one-line source note sits under that frontmatter and does not replace the upstream metadata. When the skill is installed into a directory named `skills` (the usual `npx skills add` location), root detection matches upstream.
+
+## nature-polishing
+
+- Upstream: https://github.com/Yuan1z0825/nature-skills
+- Upstream path: `skills/nature-polishing/`
+- Commit: [`9e2d90e2171a61dc0ae072e43e8d16e3fc73572f`](https://github.com/Yuan1z0825/nature-skills/commit/9e2d90e2171a61dc0ae072e43e8d16e3fc73572f) (2026-09-25, "Update image in README"). This was also the `main` tip at copy time.
+- License: Apache License, Version 2.0. The upstream skill folder has no `LICENSE` of its own; this copy uses the repository `LICENSE`. Full text: [`nature-polishing/LICENSE`](nature-polishing/LICENSE). https://www.apache.org/licenses/LICENSE-2.0
+- Owner: Yizhe Yuan ([Yuan1z0825](https://github.com/Yuan1z0825)). The upstream English README lists Yizhe Yuan as founder and maintainer. The Apache-2.0 appendix in that `LICENSE` still has the upstream placeholder copyright line; this collection does not add a copyright holder.
+- What was copied: the entire `skills/nature-polishing/` tree (`SKILL.md`, `manifest.yaml`, `agents/`, `references/`, `static/`, `README.md`, `README_EN.md`), plus the repository `LICENSE`. Relative paths such as `../nature-shared/core/...` are unchanged. A one-line source note sits under the `SKILL.md` frontmatter.
+
+## nature-ref-verifier
+
+- Upstream: https://github.com/Yuan1z0825/nature-skills
+- Upstream path: `skills/nature-ref-verifier/`
+- Commit: [`9e2d90e2171a61dc0ae072e43e8d16e3fc73572f`](https://github.com/Yuan1z0825/nature-skills/commit/9e2d90e2171a61dc0ae072e43e8d16e3fc73572f) (2026-09-25, "Update image in README"). This was also the `main` tip at copy time.
+- License: Apache License, Version 2.0. The upstream skill folder has no `LICENSE` of its own; this copy uses the repository `LICENSE`. Full text: [`nature-ref-verifier/LICENSE`](nature-ref-verifier/LICENSE). https://www.apache.org/licenses/LICENSE-2.0
+- Owner: Yizhe Yuan ([Yuan1z0825](https://github.com/Yuan1z0825)). The upstream English README lists Yizhe Yuan as founder and maintainer. The Apache-2.0 appendix in that `LICENSE` still has the upstream placeholder copyright line; this collection does not add a copyright holder.
+- What was copied: the entire `skills/nature-ref-verifier/` tree (`SKILL.md`, `manifest.yaml`, `agents/`, `references/`, `README.md`, `README_EN.md`), plus the repository `LICENSE`. This skill does not load `nature-shared`. A one-line source note sits under the `SKILL.md` frontmatter.
+
+## nature-shared
+
+- Upstream: https://github.com/Yuan1z0825/nature-skills
+- Upstream path: `skills/nature-shared/`
+- Commit: [`9e2d90e2171a61dc0ae072e43e8d16e3fc73572f`](https://github.com/Yuan1z0825/nature-skills/commit/9e2d90e2171a61dc0ae072e43e8d16e3fc73572f) (2026-09-25, "Update image in README"). This was also the `main` tip at copy time.
+- License: Apache License, Version 2.0. The upstream skill folder has no `LICENSE` of its own; this copy uses the repository `LICENSE`. Full text: [`nature-shared/LICENSE`](nature-shared/LICENSE). https://www.apache.org/licenses/LICENSE-2.0
+- Owner: Yizhe Yuan ([Yuan1z0825](https://github.com/Yuan1z0825)). The upstream English README lists Yizhe Yuan as founder and maintainer. The Apache-2.0 appendix in that `LICENSE` still has the upstream placeholder copyright line; this collection does not add a copyright holder.
+- What was copied: the entire `skills/nature-shared/` tree (`SKILL.md`, `manifest.yaml`, `agents/`, `core/`, `journal-formats/`, `scripts/`, `tests/`, `README.md`, `README_EN.md`), plus the repository `LICENSE`. It is a shared dependency. Its `SKILL.md` says not to invoke it as a standalone user workflow. `nature-polishing` keeps it as a sibling so `../nature-shared/...` resolves. A one-line source note sits under the `SKILL.md` frontmatter.
