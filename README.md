@@ -36,6 +36,28 @@ Lab cluster 1 / PJLAB workflow for paths, proxies, model weights, raw `rlaunch`/
 - Source: https://github.com/black-yt/skills/tree/main/lab-cluster-1 (`lab-cluster-1/`), modified as described above
 - License: none published. [black-yt/skills](https://github.com/black-yt/skills) has no `LICENSE` file, and GitHub reports no license. The base skill's copyright stays with the upstream author. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
+### nature-polishing
+
+Polish, translate, or tighten existing academic prose while preserving facts, terminology, and evidence boundaries, including manuscript LaTeX layout fixes. Drafting new sections is the upstream `nature-writing` skill, which is not in this collection.
+
+- Source: https://github.com/Yuan1z0825/nature-skills (`skills/nature-polishing/`)
+- License: [Apache-2.0](nature-polishing/LICENSE)
+- Depends on [`nature-shared/`](nature-shared/) as a sibling. `SKILL.md` and `manifest.yaml` load `../nature-shared/core/...` (and deeper fragments load the same package). Those relative paths are unchanged.
+
+### nature-ref-verifier
+
+Cross-check scholarly references field by field (authors, title, year, volume, issue, pages) and flag conflicts such as volume-year versus DOI-year, author order, and page drift. Works on a full bibliography or a single citation.
+
+- Source: https://github.com/Yuan1z0825/nature-skills (`skills/nature-ref-verifier/`)
+- License: [Apache-2.0](nature-ref-verifier/LICENSE)
+
+### nature-shared
+
+Shared dependency used by `nature-polishing` (and by other upstream Nature skills that are not copied here). Not a standalone user-facing skill: [`nature-shared/SKILL.md`](nature-shared/SKILL.md) says to load only the specific `core/` or `journal-formats/` file another Nature skill requests, and not to invoke this package as its own workflow.
+
+- Source: https://github.com/Yuan1z0825/nature-skills (`skills/nature-shared/`)
+- License: [Apache-2.0](nature-shared/LICENSE)
+
 ## Use
 
 ### Path
@@ -50,7 +72,12 @@ ln -s "$(pwd)/scientific-figure-making" ~/.cursor/skills/scientific-figure-makin
 ln -s "$(pwd)/design-taste-frontend" ~/.cursor/skills/design-taste-frontend
 ln -s "$(pwd)/ppt-master" ~/.cursor/skills/ppt-master
 ln -s "$(pwd)/lab-cluster-1" ~/.cursor/skills/lab-cluster-1
+ln -s "$(pwd)/nature-polishing" ~/.cursor/skills/nature-polishing
+ln -s "$(pwd)/nature-ref-verifier" ~/.cursor/skills/nature-ref-verifier
+ln -s "$(pwd)/nature-shared" ~/.cursor/skills/nature-shared
 ```
+
+`nature-shared` should sit beside `nature-polishing`. The polishing skill resolves `../nature-shared/...` from its own directory.
 
 Claude Code and Codex use `~/.claude/skills` and `~/.codex/skills` the same way.
 
@@ -64,7 +91,12 @@ npx skills add https://github.com/Aux-724/skills --skill scientific-figure-makin
 npx skills add https://github.com/Aux-724/skills --skill design-taste-frontend
 npx skills add https://github.com/Aux-724/skills --skill ppt-master
 npx skills add https://github.com/Aux-724/skills --skill lab-cluster-1
+npx skills add https://github.com/Aux-724/skills --skill nature-polishing
+npx skills add https://github.com/Aux-724/skills --skill nature-ref-verifier
+npx skills add https://github.com/Aux-724/skills --skill nature-shared
 ```
+
+`nature-shared` should sit beside `nature-polishing` in the same skills directory so `../nature-shared/...` resolves. It is a shared dependency, not a standalone workflow. `nature-ref-verifier` does not load it.
 
 ## ppt-master
 
