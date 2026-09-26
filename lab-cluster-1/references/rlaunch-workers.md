@@ -2,6 +2,8 @@
 
 > **2026-09-24 本机实测**：本团队 CPU 分区是 `ai4solver_cpu`（不是 `ai4solver_cpu_task`，后者 403 Forbidden），GPU 分区是 `ai4solver_gpu`（当时无空闲机器）；namespace `ailab-ai4solver`（本机 env 已设 `KUBEBRAIN_NAMESPACE`）。模板中的 `--mount=gpfs://...` 卷名为占位推断、未经本团队确认，提交前必须先向团队核实真实卷名。文中 scieval / ai4sdata 模板是上游作者团队的历史备份，与本项目无关。
 
+> **2026-09-26 实测补充**：`ai4solver_cpu` 是 **workspace 型配额，rlaunch 交互 worker 直接被拒**（"rlaunch can only use GPU/CPU workload quotagroup, but ai4solver_cpu is workspace type"），从本 workspace 无法起任何 rlaunch worker；需要计算资源时改用 `rjob submit`（GPU 走 `ai4solver_gpu_pool` 公共池，见 rjob-tasks.md）。另：公共池组 predict-only 必须带 `--gpu>=1`（"公共资源池配额组不允许提交 0 卡任务"），实测返回大量空闲 H200 节点。
+
 ## rlaunch 资源检查
 
 先在开发机交互 shell 中检查。只做资源预测时不会启动 worker：

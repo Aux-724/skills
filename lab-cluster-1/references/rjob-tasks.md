@@ -490,6 +490,8 @@ rjob delete "$JOB"
 
 ai4solver_gpu 1 GPU dry-run 模板，当前默认：
 
+> **2026-09-26 实测修正**：1 GPU 任务不能带 `--host-network=true`（webhook 硬拒："hostNetwork is only allowed for 8 GPU tasks"），也**不能带 `--private-machine=group`**（node selector 与全部 1970 节点不匹配，任务永久 Pending 且不报错）。去掉这两行后，`ai4solver_gpu` 提交成功但组内无空闲机器时正常排队。下面的模板已按实测修正。
+
 ```bash
 rjob submit --dry-run true \
   --name=xxxxx \
@@ -498,16 +500,48 @@ rjob submit --dry-run true \
   --memory=230000 \
   --cpu=22 \
   --charged-group=ai4solver_gpu \
-  --private-machine=group \
   --namespace=ailab-ai4solver \
   --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
-  --mount=gpfs://gpfs1/ai4solver:/mnt/shared-storage-user/ai4solver \
   --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
-  --mount=gpfs://gpfs2/ai4solver:/mnt/shared-storage-gpfs2/ai4solver \
   --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
-  --host-network=true \
-  -e DISTRIBUTED_JOB=true \
+  --host-network=false \
   -- bash command.sh
+```
+
+2026-09-26 实测：ai4solver_gpu_pool 公共资源池模板（**推荐，空闲多、调度快**）：
+
+```bash
+# 公共池：实测大量空闲 H200（8 卡/节点，~140G 显存/卡），任务 1 分钟内调度成功。
+# 注意：predict-only 必须带 --gpu>=1（"公共资源池配额组不允许提交 0 卡任务"）。
+# GPU pool 节点完全离线（直连和内网代理都不通 pypi），依赖必须离线预置。
+rjob submit \
+  --name=milpgen-example \
+  -P 1 \
+  --gpu=1 \
+  --memory=230000 \
+  --cpu=22 \
+  --charged-group=ai4solver_gpu_pool \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
+  --host-network=false \
+  -- bash -lc 'nvidia-smi | head -12; echo JOB_OK'
+```
+
+2026-09-26 实测补充（job 内验证）：
+
+- 挂载：`gpfs2-shared-public` 只读公共盘有效（`huggingface/zskj-hub/models-Qwen-Qwen3.5-35B-A3B` 是完整标准目录，可直接作 `MODEL_PATH`；`huggingface/hub/` 下有 `models--Qwen--Qwen3.6-35B-A3B` 等 cache 格式模型；`soft/` 下有共享 anaconda3/cuda/gcc）；`gpfs1/luoyidong` 个人目录 job 内可写（`WRITE_OK`）。
+- 镜像 `ml-base:22.04-pjlab`：Python 3.10.12，无 torch/vllm/transformers，需要自备环境（公共盘 wheelhouse / 预置镜像）。
+- `rjob logs` 用法：`rjob logs job <name>`（或 `replica`），直接 `rjob logs <name>` 会报 invalid choice。
+- 开发机本地盘（`/home`、`/data`）对 job 不可见，数据经 `gpfs1/luoyidong` 或公共盘流转。
+
+```bash
+# 提交后查询/取日志/删除（非交互 shell 先 source）：
+source /etc/profile.d/ssh-init.sh 2>/dev/null || true
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob get   <name>
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob logs job <name>
+KUBEBRAIN_NAMESPACE=ailab-ai4solver rjob delete <name>
 ```
 
 ai4sdata 1 GPU dry-run 模板，历史模板；2026-06-05 当前 ai4sdata 无 CPU/GPU 资源时不要作为默认模板：

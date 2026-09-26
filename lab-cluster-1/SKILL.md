@@ -75,22 +75,33 @@ Source: https://github.com/black-yt/skills/tree/main/lab-cluster-1 (`lab-cluster
 - 存储布局：`/` 100G（系统 + home），`/data` 200G 独立数据盘，`/jobutils` 只读集群工具（含 `scripts/worker_init.sh`）。本机无 gpfs 共享存储挂载，`/mnt/shared-storage-*` 不存在。
 - conda：`/root/miniconda3` 存在，仅有 `base` 环境。
 
+已验证（2026-09-26 真实 rjob 提交实测，模板见 references/rjob-tasks.md）：
+
+- **`ai4solver_cpu` 是 workspace 型配额**：`rlaunch`（交互 worker）与 `rjob submit`（正式提交；`--dry-run true` 会通过，别被迷惑）都被拒："rlaunch can only use GPU/CPU workload quotagroup, but ai4solver_cpu is workspace type"。CPU 侧起不了 worker/job，CPU 任务只能开发机本地跑。
+- **`ai4solver_gpu` 是 workload 型，rjob submit 可创建成功**；当时组内无空闲机器，任务进队列正常等待（predict-only 报"无可用机器"≠ 不能提交）。
+- **`ai4solver_gpu_pool` 公共资源池可用且空闲多**：实测大量 H200 节点（8 卡/节点，约 140G 显存/卡，driver 595.71.05 / CUDA 13.2），任务 1 分钟内调度成功。注意 predict-only 必须带 `--gpu>=1`："公共资源池配额组不允许提交 0 卡任务"。
+- **提交三坑**：① `--host-network=true` 仅允许 ≥8 GPU 任务（admission webhook 硬拒）；② **不要加 `--private-machine=group`**，会加组专属机型 node selector，实测 0/1970 节点匹配，任务永远 Pending 还不报错；③ 提交后 PENDING/Inqueue 是正常排队，别误判为失败。
+- **挂载实测有效**（job 内）：`gpfs://gpfs2/gpfs2-shared-public`（公共只读盘，含 huggingface 模型）与 `gpfs://gpfs1/luoyidong`（个人目录，job 内可写，实测 `WRITE_OK`）。
+- **公共盘内容**：`huggingface/zskj-hub/models-Qwen-Qwen3.5-35B-A3B` 为完整标准目录（14 分片 + config + tokenizer，可直接作 `MODEL_PATH`）；`huggingface/hub/models--Qwen--Qwen3.6-35B-A3B` 等 hub-cache 格式模型也在；`soft/` 下有共享 anaconda3、cuda、gcc 等。
+- **GPU pool 节点完全离线**：直连外网不通；source 内网代理脚本后 `pypi.org` 仍连不上（000）。GPU 任务依赖必须离线铺好（wheelhouse / 预置环境镜像 / 公共盘）。
+- **镜像 `registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab` 在 GPU pool 可用**：Python 3.10.12，无 torch/vllm/transformers（裸环境，需自备）。
+
 未验证（首次使用前先确认，不要当成已知事实）：
 
 - 从外部电脑 SSH 登录入口 `yidong.luoyidong+root.ailab-ai4solver.ws@h.pjlab.org.cn` 和备用 IP `100.96.218.176`（本机即开发机，日常用不到）。
-- `--mount=gpfs://gpfs1/luoyidong`、`gpfs://gpfs2/ai4solver`、`gpfs2-shared-public` 等挂载卷名是否属于本团队。向团队确认后再用；错误卷名会导致 worker 启动失败或看不到数据。没有共享存储时，worker/rjob 无法直接读取本机 `/home` 和 `/data` 里的代码数据，提交前先解决存储问题。
-- GPU rjob / GPU worker 真实提交与调度（当时无空闲 GPU 机器）。
-- 镜像 `registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab` 在本团队的可用性；CUDA 公共路径在本机的对应位置。
-- CPU worker / CPU rjob 内的代理与外网连通性（模板来自上游，未在本团队复测）。
+- `--mount=gpfs://gpfs1/ai4solver`、`gpfs://gpfs2/ai4solver` 卷名是否属于本团队（`gpfs1/luoyidong` 与 `gpfs2-shared-public` 已于 2026-09-26 验证有效）。
+- CPU worker / CPU rjob 内的代理与外网连通性（模板来自上游，未在本团队复测；且 `ai4solver_cpu` 是 workspace 型配额，当前根本无法提交 CPU rjob）。
 
 上游历史记录：原文 2026-05 ~ 2026-08 的 scieval / ai4sdata 分区切换与实测记录属于上游作者团队，与本项目无关，已从本节移除；对应模板只作格式参考。
 
 关键边界：
 
-- CPU rjob 外网任务使用 `--host-network=false`。`--host-network=true` 下代理访问外网返回 `407 Proxy Authentication Required`，不要用于 CPU rjob 外网任务。
-- 当前 `rlaunch` CPU worker 优先使用 `ai4solver_cpu` + `--namespace=ailab-ai4solver`。
-- 当前 CPU rjob 优先使用 `ai4solver_cpu` + `--namespace=ailab-ai4solver`；非交互 shell 查询、日志和删除时如遇权限问题，显式加 `KUBEBRAIN_NAMESPACE=ailab-ai4solver` 前缀。
-- 当前 GPU `rlaunch`/`rjob` 优先使用 `ai4solver_gpu` + `--namespace=ailab-ai4solver`；正式使用前先做 predict-only、dry-run 或最小短任务验证。
+- **`ai4solver_cpu` 是 workspace 型配额，rlaunch/rjob 都提交不了**（2026-09-26 实测）；CPU 任务只能开发机本地跑。
+- **GPU 任务优先用公共池 `ai4solver_gpu_pool`**（空闲多、H200、1 分钟调度）；组专属 `ai4solver_gpu` 可提交但常排队。
+- **GPU rjob 提交铁律**：`--host-network=false`（true 仅允许 ≥8 GPU 任务）；**不加 `--private-machine=group`**（node selector 全不匹配，永久 Pending）；1 GPU 任务模板 `--gpu=1 --cpu=22 --memory=230000`。
+- `rjob logs` 的目标是 `job` 或 `replica` 子命令：`rjob logs job <name>`；查询、日志和删除加 `KUBEBRAIN_NAMESPACE=ailab-ai4solver` 前缀。
+- GPU pool 节点完全离线（内网代理也不通）；依赖、权重、代码必须经挂载或镜像预置，job 内 pip 装不了东西。
+- GPU job 看不到开发机本地盘：本机 `/home`、`/data` 的数据要经 `gpfs://gpfs1/luoyidong`（job 内可写）或公共盘流转。
 - 文中的 ai4sdata / scieval 模板是上游作者团队的历史备份模板，与本项目无关，不要提交；除非用户明确说明本团队也有这些分区并验证过。
 
 ## 提交前检查
@@ -117,7 +128,11 @@ Source: https://github.com/black-yt/skills/tree/main/lab-cluster-1 (`lab-cluster
 
 - `gpu: command not found` 或 `cpu: command not found`：不要修 `.bashrc`，直接使用本 skill 中的原始 `rlaunch` 命令。
 - 非交互 SSH 没加载 alias/function：这是正常现象。`.bashrc` 常见写法会在非交互 shell 中提前 return。
-- `rlaunch` 申请失败：先跑对应资源的 `rlaunch --predict-only`，再降低 CPU/memory/GPU 或换分区。
+- `rlaunch` 申请失败：先跑对应资源的 `rlaunch --predict-only`，再降低 CPU/memory/GPU 或换分区。注意 `ai4solver_cpu` 是 workspace 型配额，rlaunch 直接被拒；公共池 `ai4solver_gpu_pool` 的 predict-only 必须带 `--gpu>=1`（0 卡任务被拒）。
+- rjob 提交报 "is workspace type"：该 charged group 是 workspace 型，换 workload 型（`ai4solver_gpu` / `ai4solver_gpu_pool`）；`ai4solver_cpu` 就是 workspace 型。
+- rjob 提交报 "hostNetwork is only allowed for 8 GPU tasks"：去掉 `--host-network=true` 改 false。
+- rjob 长期 Pending 且 events 显示 "task node selector does not match node labels / 0/N nodes are unavailable"：提交时带了 `--private-machine=group`，删除任务去掉该参数重提。
+- predict-only 报"资源不足，无可用机器"但任务很重要：仍然可以正式提交，任务进队列等机器空闲自动跑（金丝雀模式）。
 - `unknown charged-group` 或 namespace 相关错误：核对当前分区矩阵；2026-08-11 默认使用 CPU `ai4solver_cpu` 或 GPU `ai4solver_gpu` 且必须带 `--namespace=ailab-ai4solver`；ai4solver rjob 查询、日志和删除需要临时前缀 `KUBEBRAIN_NAMESPACE=ailab-ai4solver`。ai4sdata/scieval 是历史备份模板，只有用户确认回退或资源恢复后再按对应 namespace 使用。
 - GPU 节点下载失败：预期行为。改用 CPU worker 下载到共享存储，或提前准备镜像/环境。
 - GPU rjob 里 `flashinfer`、`ninja`、CUDA extension build、`nvcc not found`、`CUDA_HOME not set` 报错：不要只看开发机或 submit host 的 CUDA 路径。进入 rjob 日志或 worker 内检查 `echo "$CUDA_HOME"`、`echo "$CUDA_PATH"`、`echo "$CUDACXX"`、`test -x "$CUDACXX"`、`which nvcc`、`nvcc --version`。如果脚本 source 了 `/jobutils/scripts/worker_init.sh`，确认之后又恢复了 `CUDA_HOME`、`CUDA_PATH`、`CUDACXX`、`PATH` 和 conda env。

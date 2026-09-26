@@ -143,6 +143,8 @@ add_no_proxy_if_private(url)
 └── soft-pkg       # 集群内常用软件包
 ```
 
+> **2026-09-26 实测**（GPU rjob 内挂载验证）：`--mount=gpfs://gpfs2/gpfs2-shared-public:...` 有效；`zskj-hub/models-Qwen-Qwen3.5-35B-A3B` 是**完整标准目录**（14 分片 + config + index + tokenizer，可直接作 `MODEL_PATH`，无需 cache 转换）；`hub/` 下另有 `models--Qwen--Qwen3.6-35B-A3B`（cache 格式，26 分片）等；`soft/` 下有共享 anaconda3（仅 `module-test` 环境）、cuda、gcc 等。个人可写共享目录 `gpfs://gpfs1/luoyidong` 同批验证可写（`WRITE_OK`）——开发机本地 `/data` 对 job 不可见，大文件流转走这两个挂载。
+
 更大的模型优先保存到：
 
 ```bash
