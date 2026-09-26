@@ -32,6 +32,51 @@ rlaunch --gpu=1 --cpu=22 --memory=230000 --charged-group=scieval_gpu --private-m
 
 `rlaunch --charged-group=ai4solver_cpu --predict-only` 用于快速查看 CPU task 分区整体剩余 CPU 和存储资源；带 `--cpu` / `--memory` / `--gpu` 的 predict-only 用于判断某个具体资源申请能否调度。先用预测命令看调度结果；如果 GPU 返回资源不足或不可调度，不要循环提交或长期占用开发机轮询。
 
+## 2026-09-26 实测：GPU pool 交互 worker + SSH 直连（当前可用路径）
+
+CPU worker 因 workspace 型配额不可用（见文首备注）。GPU 交互 worker 走公共池，实测秒级调度到 H200：
+
+```bash
+# 交互式（直接落进 worker 的 bash，退出即释放）：
+rlaunch --gpu=1 --cpu=22 --memory=230000 \
+  --charged-group=ai4solver_gpu_pool \
+  --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs2/gpfs2-shared-public:/mnt/shared-storage-gpfs2/gpfs2-shared-public \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
+  --max-wait-duration=10m \
+  -- bash
+```
+
+SSH 直连 worker（实测免密可用，2026-09-26）：加 `-d` 后台挂 worker，主进程用长命命令保活，再查 IP 直连：
+
+```bash
+# 1) 后台挂 worker（主进程 sleep infinity 保活；命令结束 worker 即被回收）
+rlaunch -d --gpu=1 --cpu=22 --memory=230000 \
+  --charged-group=ai4solver_gpu_pool --namespace=ailab-ai4solver \
+  --mount=gpfs://gpfs1/luoyidong:/mnt/shared-storage-user/luoyidong \
+  --image=registry.h.pjlab.org.cn/ailab/ml-base:22.04-pjlab \
+  --max-wait-duration=10m \
+  -- bash -c 'sleep infinity'
+# 输出末行是 worker 名，如 ws-53f5c9fc71dbcac0-worker-px54x
+
+# 2) 查 worker 的 pod IP
+/kubebrain/brainctl get process -n ailab-ai4solver                        # 找 STATUS=Running 的 worker
+/kubebrain/brainctl describe process <worker名> -n ailab-ai4solver 2>&1 | grep -oE '"ip":"[0-9.]+"' | head -1
+# 或从 podIPs 注解读 100.x.x.x
+
+# 3) 从开发机免密直连（集群已注入 authorized_keys）
+ssh root@<worker_pod_ip>
+
+# 4) 从外部电脑一条命令直连（经开发机跳板）：
+ssh -J yidong.luoyidong+root.ailab-ai4solver.ws@h.pjlab.org.cn root@<worker_pod_ip>
+
+# 5) 用完释放
+/kubebrain/brainctl stop <worker名> -n ailab-ai4solver
+```
+
+注意：worker 主进程（`sleep infinity`）结束或长时间闲置后 worker 被回收，SSH 会话随之断开；SSH 进去后可用 tmux 保持工作现场。GPU pool worker 无外网、镜像为裸 py3.10。
+
 ## rlaunch CPU Worker
 
 真实交互使用时把末尾命令写成 `-- bash`。需要做短检查时，可以把末尾命令改成 `-- bash -lc '...'`，让 worker 自动退出，避免留下空闲资源。
